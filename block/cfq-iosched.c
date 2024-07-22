@@ -1003,15 +1003,6 @@ static inline u64 max_vdisktime(u64 min_vdisktime, u64 vdisktime)
 	return min_vdisktime;
 }
 
-static inline u64 min_vdisktime(u64 min_vdisktime, u64 vdisktime)
-{
-	s64 delta = (s64)(vdisktime - min_vdisktime);
-	if (delta < 0)
-		min_vdisktime = vdisktime;
-
-	return min_vdisktime;
-}
-
 static void update_min_vdisktime(struct cfq_rb_root *st)
 {
 	struct cfq_group *cfqg;
@@ -2834,9 +2825,11 @@ static struct cfq_queue *cfq_get_next_queue_forced(struct cfq_data *cfqd)
 	if (!cfqg)
 		return NULL;
 
-	for_each_cfqg_st(cfqg, i, j, st)
-		if ((cfqq = cfq_rb_first(st)) != NULL)
+	for_each_cfqg_st(cfqg, i, j, st) {
+		cfqq = cfq_rb_first(st);
+		if (cfqq)
 			return cfqq;
+	}
 	return NULL;
 }
 
@@ -4744,7 +4737,7 @@ static int cfq_init_queue(struct request_queue *q, struct elevator_type *e)
 	cfqd->cfq_slice[1] = cfq_slice_sync;
 	cfqd->cfq_target_latency = cfq_target_latency;
 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
-	cfqd->cfq_slice_idle = blk_queue_nonrot(q) ? 0 : cfq_slice_idle;
+	cfqd->cfq_slice_idle = cfq_slice_idle;
 	cfqd->cfq_group_idle = cfq_group_idle;
 	cfqd->cfq_latency = 1;
 	cfqd->hw_tag = -1;
